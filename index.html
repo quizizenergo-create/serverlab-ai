@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f7f8fc" />
+  <meta name="description" content="ServerLab AI — серверлік техникалық құралдарды ИИ көмегімен үйренуге арналған цифрлық оқу платформасы." />
+  <title>ServerLab AI — ақылды оқу платформасы</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#dashboard" aria-label="ServerLab AI басты бет">
+        <span class="brand-mark"><span></span><span></span><span></span></span>
+        <span><strong>ServerLab</strong><small>AI LEARNING</small></span>
+      </a>
+      <div class="workspace-label">ОҚУ ОРТАЛЫҒЫ</div>
+      <nav class="main-nav" aria-label="Негізгі навигация">
+        <button class="nav-item active" data-page="dashboard"><span class="nav-icon">⌂</span><span>Басты бет</span></button>
+        <button class="nav-item" data-page="course"><span class="nav-icon">▤</span><span>Оқу курсы</span><span class="nav-count">8</span></button>
+        <button class="nav-item" data-page="ai"><span class="nav-icon">✧</span><span>ИИ-тәлімгер</span><span class="nav-live"></span></button>
+        <button class="nav-item" data-page="practice"><span class="nav-icon">☑</span><span>Тапсырмалар</span></button>
+        <button class="nav-item" data-page="games"><span class="nav-icon">♧</span><span>Оқу ойындары</span></button>
+        <button class="nav-item" data-page="progress"><span class="nav-icon">▥</span><span>Менің прогресім</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="ai-mini-card">
+          <div class="ai-mini-orb">✦</div>
+          <strong>Ақылды оқу</strong>
+          <p>Әр қадам — жаңа дағды.</p>
+          <button class="text-link" data-page="ai">ИИ-мен сөйлесу <span>↗</span></button>
+        </div>
+        <button class="nav-item" data-page="about"><span class="nav-icon">ⓘ</span><span>Жоба туралы</span></button>
+        <button class="nav-item" data-page="account"><span class="nav-icon">⚙</span><span>Профиль баптауы</span></button>
+        <div class="sidebar-foot"><span class="status-dot"></span> Оқу режимі белсенді</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Мәзірді ашу">☰</button>
+        <div class="breadcrumbs"><span>Оқу платформасы</span><span class="crumb-divider">/</span><strong id="crumbCurrent">Басты бет</strong></div>
+        <div class="top-actions">
+          <button class="icon-button" id="themeButton" title="Түсті режимді ауыстыру" aria-label="Түсті режимді ауыстыру">◐</button>
+          <button class="notification-button" id="notificationButton" aria-label="Хабарламалар">♧<i></i></button>
+          <button class="profile-pill" data-page="account"><span class="avatar" id="topAvatar">О</span><span class="profile-text"><strong id="topName">Оқушы</strong><small id="topGroup">Студент профилі</small></span><span class="chevron">⌄</span></button>
+        </div>
+      </header>
+      <div class="page-wrap">
+        <section class="page active" id="page-dashboard">
+          <div class="welcome-row">
+            <div><div class="eyebrow"><span class="eyebrow-line"></span> СӘТТІ ОҚУ!</div><h1>Сәлем, <span class="gradient-text" id="welcomeName">Оқушы</span> 👋</h1><p class="muted lead">Бүгін жаңа нәрсе үйренуге керемет күн. Өз қарқыныңмен алға жылжы.</p></div>
+            <div class="date-chip"><span>◷</span><span id="todayLabel">Бүгінгі оқу күні</span></div>
+          </div>
+          <div class="hero-banner">
+            <div class="hero-content"><span class="hero-kicker"><span class="sparkle">✦</span> СЕНІҢ ЖЕКЕ ОҚУ ЖОЛЫҢ</span><h2>Серверлер әлемін<br/><em>ақылды түрде</em> меңгер.</h2><p>ИИ күрделі ұғымдарды түсіндіреді, біліміңді тексереді және келесі қадамыңды ұсынады.</p><button class="button button-white" data-page="course">Оқуды жалғастыру <span>→</span></button><div class="hero-footnote"><span class="tiny-check">✓</span> Оқу қарқыны саған бейімделеді</div></div>
+            <div class="hero-visual" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="server-tower"><div class="tower-top"></div><div class="server-slot"><i></i><i></i><b></b></div><div class="server-slot"><i></i><i></i><b></b></div><div class="server-slot"><i></i><i></i><b></b></div><div class="server-slot"><i></i><i></i><b></b></div><div class="tower-base"></div></div><div class="float-card float-card-top"><span class="float-card-icon purple">✦</span><span><strong>ИИ көмекші</strong><small>Әрдайым дайын</small></span></div><div class="float-card float-card-bottom"><span class="mini-chart">↗</span><span><strong id="heroProgress">0%</strong><small>Оқу прогресі</small></span></div><div class="hero-dot dot-a"></div><div class="hero-dot dot-b"></div></div>
+          </div>
+          <div class="section-heading"><div><h2>Оқу көрсеткіштері</h2><p class="muted">Сенің бүгінгі жетістіктерің</p></div><button class="quiet-button" data-page="progress">Толық есеп <span>↗</span></button></div>
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-top"><span class="stat-icon stat-purple">▤</span><span class="stat-tag">КУРС</span></div><div class="stat-number"><strong id="statLessons">0</strong><span>/ 24</span></div><div class="stat-label">Сабақ аяқталды</div><div class="stat-foot"><div class="mini-progress"><span id="lessonProgressBar"></span></div><small id="lessonProgressText">0% орындалды</small></div></article>
+            <article class="stat-card"><div class="stat-top"><span class="stat-icon stat-orange">✧</span><span class="stat-tag">ҰПАЙ</span></div><div class="stat-number"><strong id="statPoints">0</strong><span> XP</span></div><div class="stat-label">Жиналған тәжірибе</div><div class="stat-foot"><span class="stat-trend">✦</span><small>Әр тапсырма үшін ұпай</small></div></article>
+            <article class="stat-card"><div class="stat-top"><span class="stat-icon stat-blue">☑</span><span class="stat-tag">ТЕСТ</span></div><div class="stat-number"><strong id="statAccuracy">—</strong><span id="accuracySuffix"></span></div><div class="stat-label">Тесттердің орташа нәтижесі</div><div class="stat-foot"><span class="stat-trend blue-trend">↗</span><small id="statTestCount">Әзірге тест тапсырылмады</small></div></article>
+            <article class="stat-card"><div class="stat-top"><span class="stat-icon stat-green">♨</span><span class="stat-tag">ҚАРҚЫН</span></div><div class="stat-number"><strong id="statStreak">0</strong><span> күн</span></div><div class="stat-label">Оқу сериясы</div><div class="stat-foot"><span class="fire-mark">✦</span><small>Күн сайын аздап үйрен</small></div></article>
+          </div>
+          <div class="dashboard-columns">
+            <section class="panel continue-panel"><div class="panel-head"><div><h3>Курсты жалғастыр</h3><p class="muted">Соңғы ашқан тақырыбың</p></div><span class="panel-icon">↗</span></div><div id="continueCard" class="continue-card"></div><div class="panel-bottom"><button class="button button-primary" id="continueButton">Сабаққа өту <span>→</span></button><span class="muted micro-copy">Өз қарқыныңмен үйрен</span></div></section>
+            <section class="panel recommendation-panel"><div class="panel-head"><div><h3><span class="recommend-icon">✦</span> ИИ ұсынымы</h3><p class="muted">Сенің прогресіңе қарай</p></div><span class="ai-badge">SMART</span></div><div id="recommendationContent" class="recommendation-content"></div><button class="button button-soft full-button" id="recommendButton">Жеке тапсырманы бастау <span>→</span></button></section>
+          </div>
+          <div class="section-heading compact-heading"><div><h2>Оқу картасы</h2><p class="muted">Негізгі бағыттармен таныс</p></div><button class="quiet-button" data-page="course">Барлық бөлім <span>→</span></button></div>
+          <div class="quick-path-grid" id="quickPathGrid"></div>
+        </section>
+
+        <section class="page" id="page-course">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> ОҚУ БАҒДАРЛАМАСЫ</div><h1>Серверлік техникалық құралдар</h1><p class="muted lead">Теория, мысалдар, практикалық тапсырмалар және әр тақырыптан кейінгі тест.</p></div><div class="course-total"><strong id="courseCompleted">0</strong><span> / 24 сабақ</span><div class="mini-progress"><span id="courseProgressBar"></span></div></div></div>
+          <div class="filter-row"><div class="search-field"><span>⌕</span><input id="lessonSearch" type="search" placeholder="Тақырыпты іздеу..." aria-label="Тақырыпты іздеу" /></div><div class="filter-chips"><button class="filter-chip active" data-filter="all">Барлығы</button><button class="filter-chip" data-filter="incomplete">Аяқталмаған</button><button class="filter-chip" data-filter="complete">Аяқталған</button></div></div>
+          <div id="courseModules" class="modules-list"></div>
+        </section>
+
+        <section class="page" id="page-lesson">
+          <button class="back-link" id="backToCourse">← Курстарға оралу</button>
+          <div id="lessonContent"></div>
+        </section>
+
+        <section class="page" id="page-ai">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> ЖЕКЕ ЦИФРЛЫҚ ТӘЛІМГЕР</div><h1>ИИ-тәлімгер <span class="heading-spark">✦</span></h1><p class="muted lead">Сұрақ қой, жеңіл мысал сұра немесе өзіңді тексер. Мұнда қате сұрақ болмайды.</p></div><div class="ai-status-pill"><span class="status-dot"></span><span id="aiModeLabel">Демо режимі</span></div></div>
+          <div class="ai-workspace"><aside class="ai-tools-panel"><div class="ai-profile"><div class="big-ai-orb">✦</div><div><strong>ServerLab AI</strong><span>Оқу серіктесің</span></div><span class="online-dot"></span></div><p class="muted small-copy">Мен тақырыпты әртүрлі тәсілмен түсіндіремін. Қазір сенің курсың:</p><div class="context-chip"><span>▤</span><span>Серверлік техникалық құралдар</span></div><div class="ai-tool-list"><div class="ai-tool-item"><span class="tool-icon lavender">☷</span><span><strong>Жеңіл тілмен</strong><small>Күрделі ұғымды қарапайым түсіндіру</small></span></div><div class="ai-tool-item"><span class="tool-icon peach">⌘</span><span><strong>Мысал келтіру</strong><small>Өмірдегі жағдаймен байланыстыру</small></span></div><div class="ai-tool-item"><span class="tool-icon mint">☑</span><span><strong>Білімді тексеру</strong><small>Қысқа тест пен кері байланыс</small></span></div><div class="ai-tool-item"><span class="tool-icon sky">♧</span><span><strong>Жеке жоспар</strong><small>Қайта оқитын тақырыпты таңдау</small></span></div></div><div class="privacy-note"><span>⛨</span><p>Құпиясөз, ЖСН және басқа жеке деректерді чатқа енгізбе.</p></div></aside>
+            <div class="chat-panel"><div class="chat-head"><div><strong>Оқу чаты</strong><span class="chat-subtitle">Көмек сұрауға дайынмын</span></div><button id="clearChat" class="quiet-button">Тазалау ↺</button></div><div class="chat-messages" id="chatMessages" aria-live="polite"><div class="chat-day-label">БҮГІН</div><div class="message-row assistant-row"><div class="message-avatar">✦</div><div class="message-bubble"><div class="message-author">ServerLab AI <span class="tiny-online"></span></div><p>Сәлем! 👋 Мен серверлік техникалық құралдарды үйренуге көмектесемін. Түсінбеген тақырыбыңды жаз немесе төмендегі дайын сұрақты таңда.</p><div class="message-hint">Мысалы: «RAM мен SSD айырмашылығын қарапайым түсіндір».</div></div></div></div><div class="suggested-prompts"><button data-prompt="Сервер деген не? Қарапайым тілмен түсіндір.">Сервер деген не?</button><button data-prompt="RAM мен SSD айырмашылығын мысалмен түсіндір.">RAM мен SSD</button><button data-prompt="RAID 1 мен RAID 5 айырмашылығын түсіндір.">RAID түсіндір</button><button data-prompt="Менің прогресіме қарап, қандай тақырыпты қайталауым керек?">Жеке ұсыныс</button></div><form id="chatForm" class="chat-input-wrap"><textarea id="chatInput" rows="1" placeholder="Сұрағыңды осында жаз..." aria-label="ИИ-ге сұрақ" required></textarea><button type="submit" class="send-button" aria-label="Жіберу">↑</button><div class="chat-input-caption"><span>↵ Жіберу</span><span>ИИ жауаптарын оқулықпен тексер</span></div></form><div class="demo-disclaimer" id="aiDisclaimer">Демо режимі: жауаптар оқу базасы мен ережелер арқылы құрылады. Нақты генеративті ИИ үшін серверлік API бапталады.</div></div></div>
+        </section>
+
+        <section class="page" id="page-practice">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> БІЛІМДІ БЕКІТУ</div><h1>Тапсырмалар орталығы</h1><p class="muted lead">Сабақтардан кейін білімді тексер, тәжірибе жина және қиын тақырыптарды қайтала.</p></div><div class="practice-score"><span>Жиналған ұпай</span><strong id="practicePoints">0 XP</strong></div></div>
+          <div class="practice-grid" id="practiceGrid"></div>
+          <section class="panel assignment-panel"><div class="assignment-art"><div class="assignment-sheets"><span>✓</span><span>?</span><span>✦</span></div></div><div class="assignment-info"><span class="assignment-label">ЖЕКЕ ОҚУ ЖОСПАРЫ</span><h2>Бүгінгі тапсырмаң</h2><p class="muted" id="assignmentText">Сабақтарды бастағаннан кейін ИИ сенің прогресіңе сай тапсырма ұсынады.</p><button class="button button-primary" id="assignmentButton">Ұсынысты орындау <span>→</span></button></div></section>
+        </section>
+
+        <section class="page" id="page-games">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> ОЙНА ЖӘНЕ ҮЙРЕН</div><h1>Оқу ойындары</h1><p class="muted lead">Тақырыпты ойын арқылы бекіт. Әр дұрыс жауап — қосымша тәжірибе.</p></div><div class="game-level"><span class="level-star">✦</span><span><strong id="gameLevel">1-деңгей</strong><small>Оқу зерттеушісі</small></span></div></div>
+          <div class="game-tabs"><button class="game-tab active" data-game="match">Сәйкестендіру</button><button class="game-tab" data-game="flash">Флеш-карталар</button><button class="game-tab" data-game="quick">Жылдам тест</button></div>
+          <div class="game-stage" id="gameStage"></div>
+          <div class="game-tip"><span>✦</span><p><strong>Оқу кеңесі</strong> Қателесу — үйренудің бір бөлігі. Қате жауаптан кейін түсіндірмені оқып, қайта байқап көр.</p></div>
+        </section>
+
+        <section class="page" id="page-progress">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> ОҚУ АНАЛИТИКАСЫ</div><h1>Менің прогресім</h1><p class="muted lead">Өсуіңді бақыла, мықты жақтарыңды таны және келесі мақсатты таңда.</p></div><button class="button button-outline" id="exportProgress">Есепті жүктеу ↓</button></div>
+          <div class="progress-overview"><div class="progress-ring-card"><div class="progress-ring" id="mainProgressRing"><div class="ring-center"><strong id="mainProgressNum">0%</strong><span>жалпы прогресс</span></div></div><div class="ring-caption"><span class="status-dot"></span> Оқу жолы жалғасуда</div></div><div class="progress-numbers"><div class="progress-num-card"><span class="num-icon purple-bg">▤</span><span class="muted">Аяқталған сабақ</span><strong id="progressLessons">0</strong><small>24 сабақтың ішінен</small></div><div class="progress-num-card"><span class="num-icon orange-bg">✦</span><span class="muted">Тәжірибе ұпайы</span><strong id="progressXP">0 XP</strong><small>Барлық әрекеттер үшін</small></div><div class="progress-num-card"><span class="num-icon blue-bg">☑</span><span class="muted">Орташа тест нәтижесі</span><strong id="progressAccuracy">—</strong><small id="progressTestCount">Тест нәтижесі жоқ</small></div></div></div>
+          <div class="progress-columns"><section class="panel"><div class="panel-head"><div><h3>Бөлімдер бойынша нәтиже</h3><p class="muted">Әр бағыттағы сабақ үлесі</p></div></div><div id="progressModules" class="module-progress-list"></div></section><section class="panel achievements-panel"><div class="panel-head"><div><h3>Жетістіктер</h3><p class="muted">Оқу жолындағы марапаттар</p></div></div><div id="achievementsList" class="achievements-list"></div></section></div>
+          <section class="panel history-panel"><div class="panel-head"><div><h3>Соңғы әрекеттер</h3><p class="muted">Осы браузерде сақталған оқу тарихы</p></div><button class="quiet-button" id="resetProgress">Прогресті тазарту</button></div><div id="activityHistory" class="activity-history"></div></section>
+        </section>
+
+        <section class="page" id="page-about">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> КОНКУРСТЫҚ ЖОБА</div><h1>Жоба туралы</h1><p class="muted lead">«Білім берудегі жасанды интеллект» бағытына арналған цифрлық оқу ортасы.</p></div><div class="project-stamp">SL<span>AI</span></div></div>
+          <div class="about-hero"><div><span class="hero-kicker about-kicker">SERVERLAB AI / EDUCATION</span><h2>Технологияны үйрету ғана емес —<br/><em>үйренуді үйрету.</em></h2><p>ServerLab AI серверлік техникалық құралдарды меңгеруді жекелендірілген, интерактивті және өлшенетін оқу тәжірибесіне айналдырады.</p></div><div class="about-hero-art"><div class="about-orb">✦</div><div class="about-float f1">AI · HELP</div><div class="about-float f2">LEARN · GROW</div><div class="about-line"></div></div></div>
+          <div class="criteria-grid"><article class="criteria-card"><span class="criteria-number">01</span><div class="criteria-icon lavender">◎</div><h3>Педагогикалық мәселе</h3><p>Оқушылардың бастапқы білімі мен оқу қарқыны әртүрлі. Күрделі серверлік ұғымдарды түсіндіріп, дер кезінде жеке кері байланыс беру әрдайым оңай емес.</p></article><article class="criteria-card"><span class="criteria-number">02</span><div class="criteria-icon peach">✦</div><h3>Мақсат және аудитория</h3><p>Колледж студенттерінің серверлік жабдықтар, сақтау жүйелері, желі және виртуализация тақырыптарын теория мен практика арқылы меңгеруіне көмектесу.</p></article><article class="criteria-card"><span class="criteria-number">03</span><div class="criteria-icon mint">⌘</div><h3>ИИ құралдары</h3><p>Түсіндіруші чат-тәлімгер, деңгейге бейімделетін тапсырма ұсыну, тест нәтижесіне негізделген кеңес және оқу барысын талдауға арналған цифрлық құралдар.</p></article><article class="criteria-card"><span class="criteria-number">04</span><div class="criteria-icon sky">↗</div><h3>Практикалық маңызы</h3><p>Студент өз прогресін көреді, теорияны тестпен бекітеді, терминдерді ойын арқылы қайталайды және қиын тақырып бойынша қосымша түсіндірме алады.</p></article><article class="criteria-card"><span class="criteria-number">05</span><div class="criteria-icon yellow">♧</div><h3>Кеңейту мүмкіндігі</h3><p>Курс мазмұнын JSON құрылымы арқылы жаңартуға болады. Басқа колледждер өз пәндері мен оқу жоспарларын енгізіп, жүйені бейімдей алады.</p></article><article class="criteria-card"><span class="criteria-number">06</span><div class="criteria-icon rose">⛨</div><h3>Адалдық және қауіпсіздік</h3><p>ИИ жауаптары тексерілуі керек. Студенттерге деректерді қорғату, дербес ақпаратты артық жинамау және академиялық адалдық ережелері ескертіледі.</p></article></div>
+          <section class="panel method-panel"><div class="panel-head"><div><h3>Жоба қалай жұмыс істейді?</h3><p class="muted">Оқыту, бағалау және кәсіби даярлық бір жүйеде</p></div></div><div class="method-flow"><div class="method-step"><span>1</span><strong>Үйрену</strong><small>Тақырыпты оқу және мысал қарау</small></div><i>→</i><div class="method-step"><span>2</span><strong>Тексеру</strong><small>Әр сабақтан кейін тест орындау</small></div><i>→</i><div class="method-step"><span>3</span><strong>Талдау</strong><small>Нәтиже мен қате жауаптарды көру</small></div><i>→</i><div class="method-step"><span>4</span><strong>Бейімдеу</strong><small>Келесі тапсырманы жеке таңдау</small></div></div></section>
+          <div class="ethics-banner"><span class="ethics-icon">⛨</span><div><h3>Жауапты ИИ — сенімді оқу</h3><p>Бұл прототипте профиль мен прогресс құрылғының браузерінде сақталады. Нақты оқу орнына енгізгенде қорғалған сервер, аккаунттарды аутентификациялау, рұқсаттарды басқару және деректерді сақтау саясаты қажет.</p></div></div>
+        </section>
+
+        <section class="page" id="page-account">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> ЖЕКЕ КАБИНЕТ</div><h1>Менің профилім</h1><p class="muted lead">Профиль ақпаратыңды реттеп, оқу мақсатыңды таңда.</p></div></div>
+          <div class="account-layout"><section class="panel account-profile-panel"><div class="account-banner"></div><div class="account-avatar-wrap"><div class="account-avatar" id="accountAvatar">О</div><span class="account-online"></span></div><h2 id="accountNameDisplay">Оқушы</h2><p class="muted" id="accountGroupDisplay">Студент профилі</p><div class="account-level"><span>✦</span><strong id="accountLevel">1-деңгей</strong><small id="accountLevelTitle">Оқу зерттеушісі</small></div><div class="account-mini-stats"><div><strong id="accountLessons">0</strong><small>Сабақ</small></div><div><strong id="accountXp">0</strong><small>XP</small></div><div><strong id="accountTests">0</strong><small>Тест</small></div></div></section><section class="panel account-form-panel"><div class="panel-head"><div><h3>Профиль деректері</h3><p class="muted">Жұлдызша қойылған өрістер міндетті</p></div></div><form id="profileForm" class="profile-form"><label>Атың немесе лақап атың <span>*</span><input id="profileName" maxlength="40" required placeholder="Мысалы, Айдана" /></label><label>Тобың<input id="profileGroup" maxlength="30" placeholder="Мысалы, РПО-250" /></label><label>Оқу мақсаты<select id="profileGoal"><option value="basics">Негіздерді меңгеру</option><option value="tests">Тест нәтижесін жақсарту</option><option value="practice">Практикалық дағдыны дамыту</option><option value="career">Кәсіби даярлық</option></select></label><div class="form-note"><span>ⓘ</span> Бұл демонстрациялық нұсқада электрондық пошта, құпиясөз немесе ЖСН сұралмайды.</div><button class="button button-primary" type="submit">Өзгерістерді сақтау <span>✓</span></button><p class="form-success" id="profileSaveMessage" role="status"></p></form></section></div>
+        </section>
+
+        <footer class="app-footer"><span>© 2026 ServerLab AI</span><span><span class="footer-dot"></span> Оқуды жалғастыр · Бір қадамнан</span><button data-page="about">Жоба әдістемесі</button></footer>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
