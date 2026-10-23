@@ -304,15 +304,22 @@
     if (localStorage.getItem(demoStorageKey) === 'true') { enterDemoMode(true); return; }
     try {
       const status = await api('/api/status');
-      dbReady = Boolean(status.dbConnected);
-      if (!dbReady) {
+      const localFileMode = status.storageMode === 'local-file';
+      dbReady = Boolean(status.dbConnected) || localFileMode;
+
+      if (localFileMode) {
         setupWarning.hidden = false;
-        setupWarning.innerHTML = status.dbConfigured
-          ? 'PostgreSQL бапталған, бірақ қосылым расталмады. Render → PostgreSQL қызметінің <strong>Connect</strong> бөлімінен <strong>Internal Database URL</strong> мәнін тексеріп, веб-сервистегі <code>DATABASE_URL</code> айнымалысына қой. Сервис пен база бір аймақта болуы керек.'
-          : 'Ортақ тіркелгі мен әкімші панелі үшін Render ішінде PostgreSQL базасын жасап, оның <strong>Internal Database URL</strong> мәнін веб-сервистің Environment бөліміндегі <code>DATABASE_URL</code> айнымалысына қос. Демо режимі базасыз жұмыс істей алады.';
+        setupWarning.innerHTML = '<strong>Сынақ/жергілікті сақтау режимі.</strong> Тіркелу мен прогресс осы сервердегі файлда сақталады. Render-де білім алушылардың деректері ортақ әрі тұрақты болуы үшін PostgreSQL және <code>DATABASE_URL</code> қажет.';
+      } else if (!status.dbConnected) {
+        setupWarning.hidden = false;
+        setupWarning.innerHTML = 'PostgreSQL бапталған, бірақ қосылым расталмады. Render → PostgreSQL қызметінің <strong>Connect</strong> бөлімінен <strong>Internal Database URL</strong> мәнін тексеріп, веб-сервистегі <code>DATABASE_URL</code> айнымалысына қой. Сервис пен база бір аймақта болуы керек.';
         showGate(true);
+        setAuthStatus('База қосылымы тексерілуде', '');
         return;
+      } else {
+        setupWarning.hidden = true;
       }
+
       const auth = await api('/api/auth/me');
       if (auth.user) {
         try { await loadAccount(auth.user); }
@@ -325,6 +332,7 @@
       showGate(true);
       setupWarning.hidden = false;
       setupWarning.textContent = 'Серверге қосылу мүмкін болмады. Сайтты http://127.0.0.1:4173 немесе Render арқылы ашқаныңды тексер.';
+      console.error('Server initialization error:', error.message);
     }
   }
   initialize();

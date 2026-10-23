@@ -1,5 +1,8 @@
 'use strict';
 
+// Load a local .env file when dotenv is installed; hosting providers can inject env vars directly.
+try { require('dotenv').config(); } catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
+
 // ServerLab AI: web server, student accounts, progress storage and admin API.
 // Node.js 20+ recommended. PostgreSQL is required for shared accounts/progress.
 
@@ -46,6 +49,63 @@ const pool = (DATABASE_URL && Pool) ? new Pool({
   connectionTimeoutMillis: 10_000
 }) : null;
 if (pool) pool.on('error', error => console.error('PostgreSQL idle-client error:', error.message));
+
+// When DATABASE_URL is not configured (for local development), use a local JSON store.
+// This lets the project run without paid services. For a multi-user deployment, configure PostgreSQL.
+const LOCAL_STORE_DIR = path.join(ROOT, '.localdata');
+const LOCAL_STORE_PATH = path.join(LOCAL_STORE_DIR, 'serverlab-store.json');
+let localStore = null;
+let localWriteQueue = Promise.resolve();
+
+async function persistLocalStore() {
+  if (!localStore) return;
+  localWriteQueue = localWriteQueue.catch(() => {}).then(async () => {
+    await fs.promises.mkdir(LOCAL_STORE_DIR, { recursive: true });
+    const tmp = `${LOCAL_STORE_PATH}.tmp`;
+    await fs.promises.writeFile(tmp, JSON.stringify(localStore, null, 2), { mode: 0o600 });
+    await fs.promises.rename(tmp, LOCAL_STORE_PATH);
+  });
+  return localWriteQueue;
+}
+
+async function initializeLocalStore() {
+  try {
+    const parsed = JSON.parse(await fs.promises.readFile(LOCAL_STORE_PATH, 'utf8'));
+    localStore = {
+      users: Array.isArray(parsed.users) ? parsed.users : [],
+      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+      progress: parsed.progress && typeof parsed.progress === 'object' ? parsed.progress : {}
+    };
+  } catch (error) {
+    if (error.code !== 'ENOENT' && !(error instanceof SyntaxError)) throw error;
+    localStore = { users: [], sessions: [], progress: {} };
+  }
+  const now = Date.now();
+  localStore.sessions = localStore.sessions.filter(session => Date.parse(session.expires_at) > now);
+
+  // An administrator is only promoted/created from private environment settings.
+  const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const adminPassword = String(process.env.ADMIN_PASSWORD || '');
+  if (adminEmail && adminPassword) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail) || adminPassword.length < 12) {
+      throw new Error('ADMIN_EMAIL must be valid and ADMIN_PASSWORD must be at least 12 characters.');
+    }
+    const passwordHash = await hashPassword(adminPassword);
+    let admin = localStore.users.find(item => item.email === adminEmail);
+    if (!admin) {
+      admin = { id: Math.max(0, ...localStore.users.map(item => Number(item.id) || 0)) + 1, name: '', email: adminEmail, group_name: '', password_hash: '', role: 'admin', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      localStore.users.push(admin);
+    }
+    admin.name = String(process.env.ADMIN_NAME || 'Ақшабаева Сымбат').trim().slice(0, 80) || 'Ақшабаева Сымбат';
+    admin.password_hash = passwordHash;
+    admin.role = 'admin';
+    admin.updated_at = new Date().toISOString();
+    console.log(`Admin account configured for ${adminEmail}`);
+  } else {
+    console.warn('ADMIN_EMAIL/ADMIN_PASSWORD not set; add both privately to create an admin account.');
+  }
+  await persistLocalStore();
+}
 
 const rateCounters = new Map();
 function rateLimitOkay(key, limit = 20, windowMs = 60_000) {
@@ -142,7 +202,7 @@ async function verifyPassword(password, stored) {
 }
 
 async function initializeDatabase() {
-  if (!pool) return;
+  if (!pool) { await initializeLocalStore(); return; }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id BIGSERIAL PRIMARY KEY,
@@ -197,24 +257,38 @@ async function initializeDatabase() {
 async function createSession(userId, res) {
   const token = crypto.randomBytes(32).toString('base64url');
   const tokenHash = sha256(token);
-  await pool.query(
-    'INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'7 days\')',
-    [tokenHash, userId]
-  );
+  if (pool) {
+    await pool.query(
+      'INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'7 days\')',
+      [tokenHash, userId]
+    );
+  } else if (localStore) {
+    localStore.sessions = localStore.sessions.filter(item => item.token_hash !== tokenHash && Date.parse(item.expires_at) > Date.now());
+    localStore.sessions.push({ token_hash: tokenHash, user_id: Number(userId), expires_at: new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString(), created_at: new Date().toISOString() });
+    await persistLocalStore();
+  } else {
+    throw new Error('Account storage is not initialized');
+  }
   setSessionCookie(res, token);
 }
 
 async function currentUser(req) {
-  if (!pool) return null;
   const token = parseCookies(req.headers.cookie)[COOKIE_NAME];
   if (!token || token.length > 200) return null;
-  const result = await pool.query(`
-    SELECT u.id, u.name, u.email, u.group_name, u.role, u.created_at
-    FROM sessions s JOIN users u ON u.id = s.user_id
-    WHERE s.token_hash = $1 AND s.expires_at > NOW()
-    LIMIT 1
-  `, [sha256(token)]);
-  return result.rows[0] || null;
+  const tokenHash = sha256(token);
+  if (pool) {
+    const result = await pool.query(`
+      SELECT u.id, u.name, u.email, u.group_name, u.role, u.created_at
+      FROM sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.token_hash = $1 AND s.expires_at > NOW()
+      LIMIT 1
+    `, [tokenHash]);
+    return result.rows[0] || null;
+  }
+  if (!localStore) return null;
+  const session = localStore.sessions.find(item => item.token_hash === tokenHash && Date.parse(item.expires_at) > Date.now());
+  if (!session) return null;
+  return localStore.users.find(item => Number(item.id) === Number(session.user_id)) || null;
 }
 
 function safeProgress(value) {
@@ -267,8 +341,8 @@ function studentMetrics(data) {
 }
 
 async function requireUser(req, res) {
-  if (!pool) {
-    sendJson(res, 503, { error: 'DATABASE_NOT_CONFIGURED', message: 'Аккаунттар базасы әлі бапталмаған.' });
+  if (!pool && !localStore) {
+    sendJson(res, 503, { error: 'STORAGE_NOT_READY', message: 'Аккаунт сақтау жүйесі іске қосылмаған.' });
     return null;
   }
   const user = await currentUser(req);
@@ -404,7 +478,7 @@ async function handleTranslate(req, res) {
 }
 
 async function handleRegister(req, res) {
-  if (!pool) return sendJson(res, 503, { error: 'DATABASE_NOT_CONFIGURED', message: 'Тіркелу базасы әлі бапталмаған. Әкімші Render-да DATABASE_URL қосуы керек.' });
+  if (!pool && !localStore) return sendJson(res, 503, { error: 'STORAGE_NOT_READY', message: 'Аккаунт сақтау жүйесі әлі бапталмаған.' });
   const ip = req.socket.remoteAddress || 'unknown';
   if (!rateLimitOkay(`register:${ip}`, 15)) return sendJson(res, 429, { error: 'Тіркелу әрекеті тым жиі. Кейін қайталап көр.' });
   let body;
@@ -418,13 +492,21 @@ async function handleRegister(req, res) {
   if (password.length < 8 || password.length > 128) return sendJson(res, 400, { error: 'Құпиясөз 8–128 таңба болуы керек.' });
   try {
     const passwordHash = await hashPassword(password);
-    const result = await pool.query(
-      'INSERT INTO users (name, email, group_name, password_hash, role) VALUES ($1, $2, $3, $4, \'student\') RETURNING id, name, email, group_name, role, created_at',
-      [name, email, group, passwordHash]
-    );
-    const row = result.rows[0];
+    let row;
+    if (pool) {
+      const result = await pool.query(
+        'INSERT INTO users (name, email, group_name, password_hash, role) VALUES ($1, $2, $3, $4, \'student\') RETURNING id, name, email, group_name, role, created_at',
+        [name, email, group, passwordHash]
+      );
+      row = result.rows[0];
+    } else {
+      if (localStore.users.some(item => item.email.toLowerCase() === email)) return sendJson(res, 409, { error: 'Бұл электрондық пошта тіркелген. Жүйеге кіріп көр.' });
+      row = { id: Math.max(0, ...localStore.users.map(item => Number(item.id) || 0)) + 1, name, email, group_name: group, password_hash: passwordHash, role: 'student', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      localStore.users.push(row);
+      await persistLocalStore();
+    }
     await createSession(row.id, res);
-    return sendJson(res, 201, { user: publicUser(row) });
+    return sendJson(res, 201, { user: publicUser(row), storageMode: pool ? 'postgresql' : 'local-file' });
   } catch (error) {
     if (error.code === '23505') return sendJson(res, 409, { error: 'Бұл электрондық пошта тіркелген. Жүйеге кіріп көр.' });
     console.error('Registration failed:', error.message);
@@ -433,7 +515,7 @@ async function handleRegister(req, res) {
 }
 
 async function handleLogin(req, res) {
-  if (!pool) return sendJson(res, 503, { error: 'DATABASE_NOT_CONFIGURED', message: 'Аккаунттар базасы әлі бапталмаған.' });
+  if (!pool && !localStore) return sendJson(res, 503, { error: 'STORAGE_NOT_READY', message: 'Аккаунт сақтау жүйесі әлі бапталмаған.' });
   const ip = req.socket.remoteAddress || 'unknown';
   if (!rateLimitOkay(`login:${ip}`, 60)) return sendJson(res, 429, { error: 'Кіру әрекеті тым жиі. Бір минуттан кейін қайталап көр.' });
   let body;
@@ -442,20 +524,29 @@ async function handleLogin(req, res) {
   const password = String(body.password || '');
   if (!email || !password) return sendJson(res, 400, { error: 'Электрондық пошта мен құпиясөзді енгіз.' });
   if (!rateLimitOkay(`login-email:${email}`, 8)) return sendJson(res, 429, { error: 'Бұл аккаунт үшін кіру әрекеті тым жиі. Кейін қайталап көр.' });
-  const result = await pool.query('SELECT id, name, email, group_name, password_hash, role, created_at FROM users WHERE email = $1 LIMIT 1', [email]);
-  const row = result.rows[0];
-  // Do equivalent password work for an unknown email to make enumeration less useful.
+  let row;
+  if (pool) {
+    const result = await pool.query('SELECT id, name, email, group_name, password_hash, role, created_at FROM users WHERE email = $1 LIMIT 1', [email]);
+    row = result.rows[0];
+  } else {
+    row = localStore.users.find(item => item.email.toLowerCase() === email);
+  }
   const dummy = 'scrypt$MDEyMzQ1Njc4OWFiY2RlZg$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
   const okay = await verifyPassword(password, row ? row.password_hash : dummy);
   if (!row || !okay) return sendJson(res, 401, { error: 'Электрондық пошта немесе құпиясөз дұрыс емес.' });
   await createSession(row.id, res);
-  return sendJson(res, 200, { user: publicUser(row) });
+  return sendJson(res, 200, { user: publicUser(row), storageMode: pool ? 'postgresql' : 'local-file' });
 }
 
 async function handleLogout(req, res) {
-  if (pool) {
-    const token = parseCookies(req.headers.cookie)[COOKIE_NAME];
-    if (token && token.length <= 200) await pool.query('DELETE FROM sessions WHERE token_hash = $1', [sha256(token)]).catch(() => {});
+  const token = parseCookies(req.headers.cookie)[COOKIE_NAME];
+  if (token && token.length <= 200) {
+    const tokenHash = sha256(token);
+    if (pool) await pool.query('DELETE FROM sessions WHERE token_hash = $1', [tokenHash]).catch(() => {});
+    else if (localStore) {
+      localStore.sessions = localStore.sessions.filter(item => item.token_hash !== tokenHash);
+      await persistLocalStore().catch(() => {});
+    }
   }
   clearSessionCookie(res);
   return sendJson(res, 200, { ok: true });
@@ -463,8 +554,12 @@ async function handleLogout(req, res) {
 
 async function handleProgressGet(req, res) {
   const user = await requireUser(req, res); if (!user) return;
-  const result = await pool.query('SELECT data, updated_at FROM student_progress WHERE user_id = $1', [user.id]);
-  return sendJson(res, 200, { data: result.rows[0]?.data ?? null, updatedAt: result.rows[0]?.updated_at ?? null });
+  if (pool) {
+    const result = await pool.query('SELECT data, updated_at FROM student_progress WHERE user_id = $1', [user.id]);
+    return sendJson(res, 200, { data: result.rows[0]?.data ?? null, updatedAt: result.rows[0]?.updated_at ?? null });
+  }
+  const saved = localStore.progress[String(user.id)] || null;
+  return sendJson(res, 200, { data: saved?.data ?? null, updatedAt: saved?.updated_at ?? null });
 }
 async function handleProgressPut(req, res) {
   const user = await requireUser(req, res); if (!user) return;
@@ -474,36 +569,65 @@ async function handleProgressPut(req, res) {
     return sendJson(res, status, { error: status === 413 ? 'Оқу деректері тым үлкен.' : 'Оқу деректерінің форматы дұрыс емес.' });
   }
   const data = safeProgress(body.data);
-  await pool.query(`
-    INSERT INTO student_progress (user_id, data, updated_at) VALUES ($1, $2::jsonb, NOW())
-    ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()
-  `, [user.id, JSON.stringify(data)]);
-  await pool.query('UPDATE users SET name=$1, group_name=$2, updated_at=NOW() WHERE id=$3', [data.profile.name, data.profile.group, user.id]);
-  return sendJson(res, 200, { ok: true, updatedAt: new Date().toISOString() });
+  const updatedAt = new Date().toISOString();
+  if (pool) {
+    await pool.query(`
+      INSERT INTO student_progress (user_id, data, updated_at) VALUES ($1, $2::jsonb, NOW())
+      ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()
+    `, [user.id, JSON.stringify(data)]);
+    await pool.query('UPDATE users SET name=$1, group_name=$2, updated_at=NOW() WHERE id=$3', [data.profile.name, data.profile.group, user.id]);
+  } else {
+    localStore.progress[String(user.id)] = { data, updated_at: updatedAt };
+    const localUser = localStore.users.find(item => Number(item.id) === Number(user.id));
+    if (localUser) { localUser.name = data.profile.name; localUser.group_name = data.profile.group; localUser.updated_at = updatedAt; }
+    await persistLocalStore();
+  }
+  return sendJson(res, 200, { ok: true, updatedAt });
 }
 
 async function handleAdminOverview(req, res) {
   const user = await requireAdmin(req, res); if (!user) return;
-  const result = await pool.query(`
-    SELECT COUNT(*)::int AS total_students,
-      COUNT(*) FILTER (WHERE u.created_at >= NOW() - INTERVAL '7 days')::int AS new_students_week,
-      COUNT(*) FILTER (WHERE p.updated_at >= NOW() - INTERVAL '7 days')::int AS active_week,
-      COALESCE(SUM(CASE WHEN jsonb_typeof(p.data->'attempts') = 'array' THEN jsonb_array_length(p.data->'attempts') ELSE 0 END), 0)::int AS test_attempts
-    FROM users u LEFT JOIN student_progress p ON p.user_id = u.id
-    WHERE u.role = 'student'
-  `);
-  return sendJson(res, 200, result.rows[0]);
+  if (pool) {
+    const result = await pool.query(`
+      SELECT COUNT(*)::int AS total_students,
+        COUNT(*) FILTER (WHERE u.created_at >= NOW() - INTERVAL '7 days')::int AS new_students_week,
+        COUNT(*) FILTER (WHERE p.updated_at >= NOW() - INTERVAL '7 days')::int AS active_week,
+        COALESCE(SUM(CASE WHEN jsonb_typeof(p.data->'attempts') = 'array' THEN jsonb_array_length(p.data->'attempts') ELSE 0 END), 0)::int AS test_attempts
+      FROM users u LEFT JOIN student_progress p ON p.user_id = u.id
+      WHERE u.role = 'student'
+    `);
+    return sendJson(res, 200, result.rows[0]);
+  }
+  const students = localStore.users.filter(item => item.role === 'student');
+  const since = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const newStudents = students.filter(item => Date.parse(item.created_at) >= since).length;
+  const activeWeek = students.filter(item => Date.parse(localStore.progress[String(item.id)]?.updated_at || 0) >= since).length;
+  const testAttempts = students.reduce((sum, item) => sum + studentMetrics(localStore.progress[String(item.id)]?.data || {}).testAttempts, 0);
+  return sendJson(res, 200, { total_students: students.length, new_students_week: newStudents, active_week: activeWeek, test_attempts: testAttempts });
 }
 async function handleAdminUsers(req, res, url) {
   const user = await requireAdmin(req, res); if (!user) return;
-  const q = String(url.searchParams.get('q') || '').trim().slice(0, 100);
-  const result = await pool.query(`
-    SELECT u.id, u.name, u.email, u.group_name, u.role, u.created_at, p.data, p.updated_at AS progress_updated_at
-    FROM users u LEFT JOIN student_progress p ON p.user_id = u.id
-    WHERE u.role = 'student' AND ($1 = '' OR u.name ILIKE $2 OR u.email ILIKE $2 OR u.group_name ILIKE $2)
-    ORDER BY u.created_at DESC LIMIT 250
-  `, [q, `%${q}%`]);
-  const users = result.rows.map(row => ({
+  const q = String(url.searchParams.get('q') || '').trim().slice(0, 100).toLocaleLowerCase();
+  let rows;
+  if (pool) {
+    const result = await pool.query(`
+      SELECT u.id, u.name, u.email, u.group_name, u.role, u.created_at, p.data, p.updated_at AS progress_updated_at
+      FROM users u LEFT JOIN student_progress p ON p.user_id = u.id
+      WHERE u.role = 'student' AND ($1 = '' OR u.name ILIKE $2 OR u.email ILIKE $2 OR u.group_name ILIKE $2)
+      ORDER BY u.created_at DESC LIMIT 250
+    `, [q, `%${q}%`]);
+    rows = result.rows;
+  } else {
+    rows = localStore.users.filter(item => {
+      if (item.role !== 'student') return false;
+      const phrase = `${item.name} ${item.email} ${item.group_name || ''}`.toLocaleLowerCase();
+      return !q || phrase.includes(q);
+    }).sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).slice(0, 250).map(item => {
+      const progress = localStore.progress[String(item.id)] || {};
+      return { ...item, data: progress.data || null, progress_updated_at: progress.updated_at || null };
+    });
+  }
+  const users = rows.map(row => ({
     id: Number(row.id), name: row.name, email: row.email, group: row.group_name || '',
     role: row.role, createdAt: row.created_at, lastProgressAt: row.progress_updated_at,
     ...studentMetrics(row.data || {})
@@ -546,14 +670,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/healthz') {
       let dbConnected = false;
       if (pool) { try { await pool.query('SELECT 1'); dbConnected = true; } catch (error) { console.error('Health check database probe failed:', error.message); } }
-      return sendJson(res, dbConnected || !pool ? 200 : 503, { ok: true, dbConfigured: Boolean(pool), dbConnected });
+      return sendJson(res, dbConnected || !pool ? 200 : 503, { ok: true, dbConfigured: Boolean(pool), dbConnected, storageMode: pool ? 'postgresql' : 'local-file' });
     }
     if (req.method === 'GET' && url.pathname === '/api/status') {
       let dbConnected = false;
       if (pool) { try { await pool.query('SELECT 1'); dbConnected = true; } catch (error) { console.error('Database status probe failed:', error.message); } }
       return sendJson(res, 200, {
         aiEnabled: Boolean(OPENAI_API_KEY), model: OPENAI_API_KEY ? OPENAI_MODEL : null,
-        translationEnabled: Boolean(OPENAI_API_KEY), dbConfigured: Boolean(pool), dbConnected
+        translationEnabled: Boolean(OPENAI_API_KEY), dbConfigured: Boolean(pool), dbConnected, storageMode: pool ? 'postgresql' : 'local-file',
+        storageWarning: pool ? '' : 'Локалды файлға сақтау: бұлтта бірнеше құрылғыға ортақ тұрақты сақтау үшін PostgreSQL керек.'
       });
     }
     if (req.method === 'POST' && url.pathname === '/api/translate') return await handleTranslate(req, res);
@@ -561,9 +686,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/auth/login') return await handleLogin(req, res);
     if (req.method === 'POST' && url.pathname === '/api/auth/logout') return await handleLogout(req, res);
     if (req.method === 'GET' && url.pathname === '/api/auth/me') {
-      if (!pool) return sendJson(res, 503, { error: 'DATABASE_NOT_CONFIGURED', dbConfigured: false });
+      if (!pool && !localStore) return sendJson(res, 503, { error: 'STORAGE_NOT_READY' });
       const user = await currentUser(req);
-      return sendJson(res, 200, { user: user ? publicUser(user) : null, dbConfigured: true });
+      return sendJson(res, 200, { user: user ? publicUser(user) : null, dbConfigured: Boolean(pool), storageMode: pool ? 'postgresql' : 'local-file' });
     }
     if (req.method === 'GET' && url.pathname === '/api/progress') return await handleProgressGet(req, res);
     if (req.method === 'PUT' && url.pathname === '/api/progress') return await handleProgressPut(req, res);
@@ -585,9 +710,10 @@ const server = http.createServer(async (req, res) => {
 async function start() {
   if (pool) {
     await initializeDatabase();
-    console.log('PostgreSQL ready; student accounts and progress storage enabled.');
+    console.log('PostgreSQL ready; shared student accounts and progress storage enabled.');
   } else {
-    console.warn('DATABASE_URL is missing. The UI will load, but shared registration/login requires PostgreSQL.');
+    await initializeLocalStore();
+    console.warn('DATABASE_URL is missing. Local JSON storage is enabled for development; it is not a reliable shared cloud database. Configure PostgreSQL for deployment.');
   }
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`ServerLab AI is running on port ${PORT}`);
