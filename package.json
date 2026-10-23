@@ -1,8 +1,8 @@
 {
   "name": "serverlab-ai",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
-  "description": "ServerLab AI multilingual learning platform with 36 expanded lessons, video resources, server lab and admin analytics",
+  "description": "ServerLab AI multilingual learning platform with shared PostgreSQL accounts, admin analytics and assisted translation",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

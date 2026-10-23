@@ -5,6 +5,7 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
         value: 22.14.0
@@ -15,10 +16,12 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: ADMIN_NAME
-        value: ServerLab Administrator
+        value: Ақшабаева Сымбат
       - key: DATABASE_SSL
         value: "false"
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
+        value: gpt-5-mini
+      - key: TRANSLATION_MODEL
         value: gpt-5-mini

@@ -76,7 +76,7 @@
       foot?.parentElement?.insertBefore(control, foot);
     }
     const demoProfile = window.ServerLabApp?.getState?.()?.profile || {};
-    const name = currentUser?.name || (demoMode ? (demoProfile.name || 'Демо оқушы') : 'Қолданушы');
+    const name = currentUser?.name || (demoMode ? (demoProfile.name || 'Демо білім алушы') : 'Қолданушы');
     const roleText = demoMode ? 'Демо режим · осы браузерде' : (currentUser?.role === 'admin' ? 'Әкімші' : (currentUser?.group || 'Білім алушы'));
     control.innerHTML = `<div class="session-user"><span class="session-user-avatar">${escapeHTML(name.trim().charAt(0).toLocaleUpperCase('kk-KZ') || 'О')}</span><span><strong>${escapeHTML(name)}</strong><small>${escapeHTML(roleText)}</small></span></div><button id="authLogout" type="button" class="session-logout" title="${demoMode?'Аккаунтқа кіру':'Аккаунттан шығу'}">⇥ <span>${demoMode?'Кіру':'Шығу'}</span></button>`;
     document.getElementById('authLogout').addEventListener('click', () => demoMode ? exitDemoMode() : logout());
@@ -85,7 +85,7 @@
     const base = window.ServerLabApp?.defaultState?.() || {};
     return {
       ...base,
-      profile: { ...(base.profile || {}), name: user.name || 'Оқушы', group: user.group || '', goal: 'basics' },
+      profile: { ...(base.profile || {}), name: user.name || 'Білім алушы', group: user.group || '', goal: 'basics' },
       results: {}, attempts: [], xp: 0, streak: 0, lastActive: '', history: [], gameRewardDays: {}, theme: 'light'
     };
   }
@@ -96,7 +96,7 @@
     try {
       const saved = await api('/api/progress');
       const state = saved.data ? saved.data : emptyProgress(user);
-      state.profile = { ...(state.profile || {}), name: user.name || state.profile?.name || 'Оқушы', group: user.group || state.profile?.group || '' };
+      state.profile = { ...(state.profile || {}), name: user.name || state.profile?.name || 'Білім алушы', group: user.group || state.profile?.group || '' };
       window.ServerLabApp?.setState(state);
     } finally {
       syncingFromServer = false;
@@ -204,7 +204,7 @@
     for (const user of users) {
       const row = document.createElement('tr');
       const nameWrap = document.createElement('div'); nameWrap.className = 'admin-user-cell';
-      const name = document.createElement('strong'); name.textContent = user.name || 'Оқушы';
+      const name = document.createElement('strong'); name.textContent = user.name || 'Білім алушы';
       const email = document.createElement('small'); email.textContent = user.email || '';
       nameWrap.append(name, email);
       row.append(makeCell(nameWrap), makeCell(user.group || '—'), makeCell(formatDate(user.createdAt)), makeCell(`${user.completedLessons || 0} / 36`));
@@ -217,7 +217,7 @@
       const detailRow = document.createElement('tr'); detailRow.className = 'admin-detail-row'; detailRow.hidden = true;
       const detailTd = document.createElement('td'); detailTd.colSpan = 8;
       const details = document.createElement('details'); details.className = 'admin-student-results'; details.open = true;
-      const summary = document.createElement('summary'); summary.textContent = `Результаты по темам: ${user.name || 'оқушы'} — ${user.completedLessons || 0}/36 уроков`;
+      const summary = document.createElement('summary'); summary.textContent = `Результаты по темам: ${user.name || 'білім алушы'} — ${user.completedLessons || 0}/36 уроков`;
       const grid = document.createElement('div'); grid.className = 'admin-lesson-result-grid';
       const lessonResults = Array.isArray(user.lessonResults) ? user.lessonResults : [];
       for (const result of lessonResults) {
@@ -236,12 +236,12 @@
     const holder=document.getElementById('adminGroupsOverview');if(!holder)return;
     const groups=new Map();
     for(const user of users){const key=(user.group||'Тобы көрсетілмеген').trim();const g=groups.get(key)||{name:key,count:0,xp:0,lessons:0,scores:[],active:0};g.count++;g.xp+=Number(user.xp||0);g.lessons+=Number(user.completedLessons||0);if(user.averageTestScore!=null)g.scores.push(Number(user.averageTestScore));if(user.lastProgressAt&&Date.now()-new Date(user.lastProgressAt).getTime()<7*86400000)g.active++;groups.set(key,g);}
-    if(!groups.size){holder.innerHTML='<p class="muted">Топ бойынша статистика әзірге жоқ. Тіркелген оқушылардың тобын толтырғанда, мәлімет осы жерде көрінеді.</p>';return;}
+    if(!groups.size){holder.innerHTML='<p class="muted">Топ бойынша статистика әзірге жоқ. Тіркелген білім алушылардың тобын толтырғанда, мәлімет осы жерде көрінеді.</p>';return;}
     holder.replaceChildren();
     for(const g of [...groups.values()].sort((a,b)=>b.count-a.count)){
       const card=document.createElement('button');card.type='button';card.className='admin-group-card';
       const avg=g.scores.length?Math.round(g.scores.reduce((a,b)=>a+b,0)/g.scores.length)+'%':'—';
-      card.innerHTML=`<span class="deep-dive-label">ОҚУ ТОБЫ</span><strong>${escapeHTML(g.name)}</strong><small>Оқушы саны: ${g.count}</small><div class="group-metrics"><span>${g.lessons} сабақ</span><span>${g.xp} XP</span><span>Тест ${avg}</span></div><small>Белсенді (7 күн): ${g.active}</small>`;
+      card.innerHTML=`<span class="deep-dive-label">ОҚУ ТОБЫ</span><strong>${escapeHTML(g.name)}</strong><small>Білім алушы саны: ${g.count}</small><div class="group-metrics"><span>${g.lessons} сабақ</span><span>${g.xp} XP</span><span>Тест ${avg}</span></div><small>Белсенді (7 күн): ${g.active}</small>`;
       card.addEventListener('click',()=>{const input=document.getElementById('adminSearch');if(input){input.value=g.name==='Тобы көрсетілмеген'?'':g.name;renderAdmin();}});
       holder.appendChild(card);
     }
@@ -266,14 +266,14 @@
         api(`/api/admin/users?q=${encodeURIComponent(document.getElementById('adminSearch')?.value || '')}`)
       ]);
       document.getElementById('adminStats').innerHTML = [
-        makeStat('Барлық оқушы', overview.total_students || 0, 'Студент аккаунттары', '♙'),
-        makeStat('Жаңа тіркелді', overview.new_students_week || 0, 'Соңғы 7 күн', '＋'),
+        makeStat('Барлық білім алушы', overview.total_students || 0, 'Білім алушы аккаунттары', '♙'),
+        makeStat('Жаңадан тіркелген білім алушылар', overview.new_students_week || 0, 'Соңғы 7 күн', '＋'),
         makeStat('Тест әрекеті', overview.test_attempts || 0, 'Жинақталған нәтижелер', '☑'),
-        makeStat('Белсенді оқушы', overview.active_week || 0, 'Прогресі соңғы 7 күнде жаңарды', '↗')
+        makeStat('Белсенді білім алушы', overview.active_week || 0, 'Прогресі соңғы 7 күнде жаңарды', '↗')
       ].join('');
       renderUserRows(listing.users || []);
       renderGroupOverview(listing.users || []);
-      document.getElementById('adminListFoot').textContent = listing.limited ? 'Алғашқы 250 нәтиже көрсетілді. Нақтылау үшін іздеуді қолдан.' : `${(listing.users || []).length} оқушы көрсетілді. Тізімді тек оқу мақсатына пайдалан.`;
+      document.getElementById('adminListFoot').textContent = listing.limited ? 'Алғашқы 250 нәтиже көрсетілді. Нақтылау үшін іздеуді қолдан.' : `${(listing.users || []).length} білім алушы көрсетілді. Тізімді тек оқу мақсатына пайдалан.`;
       notice.textContent = `Әкімші ретінде кірдің: ${currentUser.email}. Соңғы жаңарту: ${new Date().toLocaleTimeString('kk-KZ', { hour: '2-digit', minute: '2-digit' })}.`;
       notice.classList.add('success');
     } catch (error) {
@@ -304,10 +304,12 @@
     if (localStorage.getItem(demoStorageKey) === 'true') { enterDemoMode(true); return; }
     try {
       const status = await api('/api/status');
-      dbReady = Boolean(status.dbConfigured);
+      dbReady = Boolean(status.dbConnected);
       if (!dbReady) {
         setupWarning.hidden = false;
-        setupWarning.innerHTML = 'Аккаунттар мен әкімші панелі үшін Render-да PostgreSQL дерекқорын жасап, <code>DATABASE_URL</code> параметрін қосу керек. Демо режимін аккаунтсыз сынауға болады; ортақ аккаунттар үшін PostgreSQL қажет.';
+        setupWarning.innerHTML = status.dbConfigured
+          ? 'PostgreSQL бапталған, бірақ қосылым расталмады. Render → PostgreSQL қызметінің <strong>Connect</strong> бөлімінен <strong>Internal Database URL</strong> мәнін тексеріп, веб-сервистегі <code>DATABASE_URL</code> айнымалысына қой. Сервис пен база бір аймақта болуы керек.'
+          : 'Ортақ тіркелгі мен әкімші панелі үшін Render ішінде PostgreSQL базасын жасап, оның <strong>Internal Database URL</strong> мәнін веб-сервистің Environment бөліміндегі <code>DATABASE_URL</code> айнымалысына қос. Демо режимі базасыз жұмыс істей алады.';
         showGate(true);
         return;
       }
